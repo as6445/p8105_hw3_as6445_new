@@ -1,0 +1,98 @@
+---
+title: "p8105_hw3_as6445"
+author: "Ayako Sekiya"
+date: "2022-10-07"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r library}
+library(tidyverse)
+library(ggridges)
+library(p8105.datasets)
+data("instacart")
+data("ny_noaa")
+```
+
+## Problem 1
+
+There are `r nrow(instacart)` observations and `r ncol(instacart)` columns in the Accel data. The variables included are as following: `r colnames(instacart)`.  
+
+```{r}
+instacart=
+  janitor::clean_names() %>% 
+```
+
+## Problem 2
+
+```{r tidy accel}
+accel = 
+  read_csv(file = "./data/accel_data.csv") %>% 
+  janitor::clean_names() %>% 
+  pivot_longer(
+    activity_1:activity_1440, 
+    names_to = "activity",
+    values_to = "activity_count") %>% 
+  mutate(day_type= ifelse(day=='Saturday','Weekend',
+                   ifelse(day=='Sunday','Weekend','Weekday')))
+      
+```
+There are `r nrow(accel)` observations and `r ncol(accel)` columns in the Accel data. The variables included are as following: `r colnames(accel)`.  
+```{r analysis}
+accel_analysis = accel %>% 
+  group_by(day_type) %>% 
+  summarize(sum_totalactivity = sum(activity_count))
+```
+
+```{r aggregate}
+accel_24 = accel %>% 
+  group_by(day) %>% 
+  ggplot(aes(x = , y = tmin, color = name)) + 
+  geom_violin(aes(fill = name), alpha = .5) + 
+  stat_summary(fun = "median", color = "blue")
+  theme(legend.position = "none")
+```
+  separate(activity, into=c("activity", "minute"), sep= "_") %>% 
+  select (-activity) %>% 
+  mutate
+## Problem 3
+
+```{r tidy noaa}
+ny_noaa <- ny_noaa %>% 
+  janitor::clean_names() %>%
+  separate(date, into=c("year", "month", "day"), sep= "-") %>% 
+  mutate(tmax = as.numeric(tmax)/10,
+         tmin = as.numeric(tmin)/10,
+        prcp = as.numeric(prcp)/10) %>% 
+  drop_na() %>%
+  group_by(snow) %>% 
+  summarize(n_obs = n())
+```
+   
+--> create a frequency tableThe most commonly observed values is 0 because there are more days that it does not snow in NY than days that snows. 
+
+```{r two-panel avg max temp}
+avg_jan_july_p = 
+  ny_noaa %>% 
+  filter(month=='01'| month=='07') %>%
+  group_by(month, year) %>% 
+  summarize(mean_tmax = mean(tmax)) %>%
+  knitr::kable(digits = 1) %>% 
+  ggplot(aes(x = tmax, y = tmin, color = name)) + 
+  geom_point(alpha = .5) +
+  theme(legend.position = "none")
+```
+
+```{r two-panel tmin and max}
+tmax_tmin_p = 
+  ny_noaa %>% 
+  group_by(year) %>% 
+  ggplot(aes(x = tmax, y = tmin, color = name)) + 
+  geom_violin(aes(fill = name), alpha = .5) + 
+  stat_summary(fun = "median", color = "blue")
+  theme(legend.position = "none")
+```
+
