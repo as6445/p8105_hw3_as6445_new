@@ -21,10 +21,6 @@ data("ny_noaa")
 
 There are `r nrow(instacart)` observations and `r ncol(instacart)` columns in the Accel data. The variables included are as following: `r colnames(instacart)`.  
 
-```{r}
-instacart=
-  janitor::clean_names() %>% 
-```
 
 ## Problem 2
 
@@ -60,28 +56,38 @@ accel_24 = accel %>%
   mutate
 ## Problem 3
 
+We will first tidy the dataset!
+
 ```{r tidy noaa}
 ny_noaa <- ny_noaa %>% 
   janitor::clean_names() %>%
   separate(date, into=c("year", "month", "day"), sep= "-") %>% 
-  mutate(tmax = as.numeric(tmax)/10,
-         tmin = as.numeric(tmin)/10,
-        prcp = as.numeric(prcp)/10) %>% 
-  drop_na() %>%
+  mutate(tmax = as.numeric(tmax, na.rm = TRUE)/10,
+         tmin = as.numeric(tmin, na.rm = TRUE)/10,
+        prcp = as.numeric(prcp, na.rm = TRUE)/10) %>% 
+  mutate(month= as.character(month.name[month]))
+```
+   
+For snowfall, what are the most commonly observed values? Why?
+
+To answer this question, we will use `group_by` and `summarize`. 
+
+```{r snowfall}
+snow <- ny_noaa %>% 
   group_by(snow) %>% 
   summarize(n_obs = n())
 ```
-   
---> create a frequency tableThe most commonly observed values is 0 because there are more days that it does not snow in NY than days that snows. 
+
+The most commonly observed values is 0 based on this output which would make sense because there should be more days that it does not snow in NY than days that snows. 
 
 ```{r two-panel avg max temp}
 avg_jan_july_p = 
   ny_noaa %>% 
-  filter(month=='01'| month=='07') %>%
-  group_by(month, year) %>% 
+  select(id, month, year, tmax, tmin) %>% 
+  filter(month=='January'| month=='July') %>%
+  group_by(id, month, year) %>% 
   summarize(mean_tmax = mean(tmax)) %>%
-  knitr::kable(digits = 1) %>% 
-  ggplot(aes(x = tmax, y = tmin, color = name)) + 
+  ggplot(aes(x = year, y = mean_tmax, color = name)) + 
   geom_point(alpha = .5) +
   theme(legend.position = "none")
 ```
@@ -89,10 +95,16 @@ avg_jan_july_p =
 ```{r two-panel tmin and max}
 tmax_tmin_p = 
   ny_noaa %>% 
-  group_by(year) %>% 
   ggplot(aes(x = tmax, y = tmin, color = name)) + 
-  geom_violin(aes(fill = name), alpha = .5) + 
-  stat_summary(fun = "median", color = "blue")
-  theme(legend.position = "none")
+  geom_hex() 
+```
+
+Make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+```{r}
+snow_plot<- ny_noaa %>% 
+  filter(snow > 0 & snow < 100) %>% 
+  mutate(year = as.character(year)) %>% 
+  ggplot(aes(x = year, y = snow, fill = year)) + 
+  geom_violin(alpha = 0.5 )
 ```
 
