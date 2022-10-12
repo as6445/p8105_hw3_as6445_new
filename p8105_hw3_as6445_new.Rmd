@@ -45,6 +45,7 @@ accel_analysis = accel %>%
 
 ```{r aggregate}
 accel_24 = accel %>% 
+  select (day, activity_count) %>% 
   group_by(day) %>% 
   ggplot(aes(x = , y = tmin, color = name)) + 
   geom_violin(aes(fill = name), alpha = .5) + 
@@ -89,22 +90,50 @@ avg_jan_july_p =
   summarize(mean_tmax = mean(tmax)) %>%
   ggplot(aes(x = year, y = mean_tmax, color = name)) + 
   geom_point(alpha = .5) +
-  theme(legend.position = "none")
+  theme(legend.position = "none") + 
+  labs(
+    title = "Average max temps in January and July",
+    x = "Years",
+    y = "Average Max daily temperature (C)",
+    caption = "Data from the ny noaa package")
 ```
 
 ```{r two-panel tmin and max}
 tmax_tmin_p = 
   ny_noaa %>% 
-  ggplot(aes(x = tmax, y = tmin, color = name)) + 
-  geom_hex() 
+  select(tmax, tmin, id, year) %>% 
+  ggplot(aes(x = tmax, y = tmin)) + 
+  geom_hex() + 
+  labs(
+    title = "Temperature max/ minplot",
+    x = "Maximum daily temperature (C)",
+    y = "Minimum daily temperature (C)",
+    caption = "Data from the ny noaa package")+
+  scale_y_continuous(breaks = c(-40, -20, 0, 20, 40, 60),
+                     labels = c("-40°C","-20°C"," 0°C", "20°C", "40°C", "60°C")) +
+  scale_x_continuous(breaks = c(-60, -30, 0, 30, 60),
+                     labels = c("-60°C", "30°C", "0°C", "30°C", "60°C")) +
+  theme(legend.position = "bottom")
+
+ggsave("tmax_tmin_p.pdf")
 ```
 
 Make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
 ```{r}
 snow_plot<- ny_noaa %>% 
+  select (year, snow) %>% 
   filter(snow > 0 & snow < 100) %>% 
   mutate(year = as.character(year)) %>% 
   ggplot(aes(x = year, y = snow, fill = year)) + 
-  geom_violin(alpha = 0.5 )
+  geom_violin(alpha = 0.5 ) +  
+  labs(
+    title = "Snowfall distribution",
+    x = "Year",
+    y = "Snowfall (mm)",
+    caption = "Data from the ny noaa package"
+)
+
+ggsave("snow_plot.pdf")
 ```
 
