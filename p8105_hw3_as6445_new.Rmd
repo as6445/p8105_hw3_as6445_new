@@ -39,12 +39,11 @@ scale_fill_discrete = scale_fill_viridis_d
 
 #### Read into data
 
-```{r read data}
+```{r import data}
 data("instacart")
 
-instacart = 
-  instacart %>% 
-  as_tibble(instacart)
+instacart=
+  instacart
 ```
 
 There are `r nrow(instacart)` observations and `r ncol(instacart)` columns in the instacart data. The variables included are as following: `r colnames(instacart)`.  
@@ -103,6 +102,7 @@ accel =
                    ifelse(day=='Sunday','Weekend','Weekday')))
       
 ```
+
 There are `r nrow(accel)` observations and `r ncol(accel)` columns in the Accel data. The variables included are as following: `r colnames(accel)`.
 
 ### Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
@@ -180,9 +180,11 @@ snow=ny_noaa %>%
   summarize(n_obs = n())
 ```
 
+There are `r nrow(snow)` observations and `r ncol(snow)` columns in the snow data. The variables included are as following: `r colnames(snow)`.
+
 The most commonly observed values is 0 based on this output which would make sense because there should be more days that it does not snow in NY than days that snows. 
 
-#### Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
+#### Make a two-panel plot showing the average max temperature in January and in July in each station across years. 
 
 ```{r}
 avg_jan_july_p<-
@@ -194,10 +196,7 @@ avg_jan_july_p<-
   drop_na(mean_tmax)%>%
   ggplot(aes(x = year, y = mean_tmax)) +
   geom_point(aes(color=id, alpha = .1))+
-  theme(legend.position = "bottom",
-        legend.key.size = unit(0.05, "cm"), 
-        legend.text = element_text(size = 7),
-        legend.direction = "horizontal") + 
+  theme(legend.position = "none") + 
   labs(
     title = "Average max temps in January and July",
     x = "Years",
@@ -211,6 +210,14 @@ avg_jan_july_p
 
 ggsave("avg_jan_july_p.pdf")
 ```
+
+Is there any observable / interpretable structure? Any outliers?
+
+From the two-panel plot, we can see that January has a lower average max temp compared to July, which is understandable. January seems to have a wider spread across all locations throughout the years, in comparison to July. 
+
+There seems to be a few outliers, but the ones to note is an outlier around 1982 in January, and around 1988 in July. It is hard to tell which location, however, due to the abundance of locations and the colors used to represent each dot. Further analysis could be done on these years to figure out which location had an abnormal average max temperatures. 
+
+There are `r nrow(avg_jan_july_p)` observations and `r ncol(avg_jan_july_p)` columns in the avg_jan_july_p dataset. The variables included are as following: `r colnames(avg_jan_july_p)`.
 
 ### Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option). 
 
@@ -229,15 +236,17 @@ tmax_tmin_p = ny_noaa %>%
     labels = c("-30°C","-15°C", "0°C", "15°C", "30°C", "45°C", "60°C")) +
   scale_y_continuous(
     breaks = c(-60, -45, -30, -15, 0, 15, 30, 45, 60), 
-    labels = c("-60°C","-45°C","-30°C","-15°C", "0°C", "15°C", "30°C", "45°C", "60°C")) 
+    labels = c("-60°C","-45°C","-30°C","-15°C", "0°C", "15°C", "30°C", "45°C", "60°C")) + 
+  theme(plot.title = element_text(size = 10, face = "bold"))
 
 tmax_tmin_p
 
 ggsave("tmax_tmin_p.pdf")
 ```
 
-
 From this plot, we can see that there are the highest concentrations where there is the lightest color. There seems to be a correlation between minimum and maximum daily temperatures around where there is the most concentrated data. 
+
+There are `r nrow(tmax_tmin_p)` observations and `r ncol(tmax_tmin_p)` columns in the tmax_tmin_p dataset. The variables included are as following: `r colnames(tmax_tmin_p)`.
 
 ### Make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
@@ -255,12 +264,22 @@ snow_plot= ny_noaa %>%
     caption = "Data from the ny noaa package") +
   scale_x_discrete(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010)) +
   theme(plot.title = element_text(size = 10, face = "bold"),
-        legend.position = "right",
-        legend.text = element_text(size = 7))
+        legend.position = "none")
 
 snow_plot
 
 ggsave("snow_plot.pdf")
 ```
 
+Note: Legends were omitted to better see plots. 
+
 From this plot, there seems to be the highest concentration of snowfall between approximately 0-25mm. The data is skewed to the right, and there are fewer occasions where it snowed more than 75mm of snow throughout the years. 
+
+There are `r nrow(snow_plot)` observations and `r ncol(snow_plot)` columns in the snow_plot dataset. The variables included are as following: `r colnames(snow_plot)`.
+
+```{r combine}
+twopanel=tmax_tmin_p+snow_plot
+
+twopanel
+```
+
