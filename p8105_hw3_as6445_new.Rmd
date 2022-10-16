@@ -90,6 +90,10 @@ instacart %>%
 
 ## Problem 2
 
+This problem uses five weeks of accelerometer data collected on a 63 year-old male with BMI 25, who was admitted to the Advanced Cardiac Care Center of Columbia University Medical Center and diagnosed with congestive heart failure (CHF). 
+
+I will first import and tidy the dataset!
+
 ```{r tidy accel}
 accel = 
   read_csv(file = "./data/accel_data.csv") %>% 
@@ -97,32 +101,34 @@ accel =
   pivot_longer(
     activity_1:activity_1440, 
     names_to = "activity",
-    values_to = "activity_count") %>% 
+    values_to = "activity_count",
+    names_prefix = "activity_") %>% 
   mutate(day_type= ifelse(day=='Saturday','Weekend',
-                   ifelse(day=='Sunday','Weekend','Weekday')))
+                   ifelse(day=='Sunday','Weekend','Weekday'))) %>% 
+    mutate(day=fct_relevel(day, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")) %>% 
+    mutate(activity = as.numeric(activity))
       
 ```
 
-There are `r nrow(accel)` observations and `r ncol(accel)` columns in the Accel data. The variables included are as following: `r colnames(accel)`.
+There are `r nrow(accel)` observations and `r ncol(accel)` columns in the Accel data. The variables included in the tidied dataset is as following: `r colnames(accel)`.
 
-### Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+#### Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 
 ```{r analysis}
 accel_analysis = accel %>% 
-  group_by(week,day_id) %>% 
-  summarize(sum_totalactivity = sum(activity_count)) %>% 
-  ggplot() +
-  geom_bar(aes(x = day_id, y = sum_totalactivity, fill= week),stat="identity")+
-  scale_x_continuous(breaks = c(0, 7, 14, 21, 28, 35),
-                   labels=c("0", "7", "14", "21", "28", "35"))+
-  theme(legend.position = "right")
-  
+group_by(day, week) %>% 
+  summarize(total_activity = sum(activity_count)) %>% 
+  pivot_wider(names_from = day,
+              values_from = total_activity)
+
 accel_analysis
 ```
 
-Based on this plot, this person seems to be more active towards the end of the week around the weekends. The person seems to be decently active during the middle of the week, but the level of activity does overall seem lower. 
+Based on the table, the person was very sedentary on the 4th and 5th Saturday. However, it is hard to see clear trends based on this table, and a plot might be able to better show trends. The activity levels seem relatively constant on Tuesdays, Wednesdays, and Thursdays. On Sundays, the activity levels decrease throughout the weeks. There is more variation for Monday, Friday and Saturday. 
 
-### Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+#### Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+
+I am creating a line plot with a point at the end to better see the trends. 
 
 ```{r aggregate}
 accel_24 = accel %>% 
@@ -132,30 +138,33 @@ accel_24 = accel %>%
    geom_line(alpha = 0.5 ) +  
   labs(
     title = "24-hour activity time for each day by week",
-    x = "day",
-    y = "activity count (min))",
+    x = "activity time (min)",
+    y = "activity count",
     caption = "Data from accel data") +
+  scale_x_continuous(breaks = c(120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320, 1440)) +
   theme(plot.title = element_text(size = 10, face = "bold"),
         legend.position = "right",
-        legend.text = element_text(size = 7))+
-  scale_x_discrete(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010)) +
-  theme(plot.title = element_text(size = 10, face = "bold"),
-        legend.position = "right",
-        legend.text = element_text(size = 7))  
-
+        legend.text = element_text(size = 7),)  
+        legend.text = element_text(angle = 90, vjust = 0.5, hjust = 1)
 accel_24 
 
 ggsave("accel_24.pdf")
 ```
 
+From this plot, we can tell that the person is teh most sedentary around sleep hours. This would correspond to the first ~6 hours of the day and the last~2 hours of the day. There seems to be progressively more activity throughout the day which would make sense because the person is awake and most likely moving those hours. There is some variation throughout the weeks depending on this person's schedule. Overall, the person seems to have higher activity on Sundays in the morning hours around 10-12pm and high activity around 8pm on Friday Nights. 
+
 ## Problem 3
 
-#### Read into data
+#### Reading data
 
 ```{r read data}
 data("ny_noaa")
 ```
 
+There are `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` columns in the snow data. The variables included are as following: `r colnames(ny_noaa)`.
+
+There are `r ny_noaa %>% filter(is.na(prcp)) %>% count` missing data in the `prcp` variable. There are `r ny_noaa %>% filter(is.na(snow)) %>% count` missing data in the `snow` variable. There are `r ny_noaa %>% filter(is.na(snwd)) %>% count` missing data in the `snwd` variable. There are `r ny_noaa %>% filter(is.na(tmin)) %>% count` missing data in the `tmin` variable. There are `r ny_noaa %>% filter(is.na(tmax)) %>% count` missing data in the `tmax` variable. 
+`
 We will first tidy the dataset!
 
 ```{r tidy noaa}
@@ -169,7 +178,9 @@ ny_noaa<-
         month= as.numeric(month)) %>% 
   mutate(month = month.name[month])
 ```
-   
+
+`prcp` is converted into mm. `tmax` and `tmin` were also converted into degrees of C. 
+
 #### For snowfall, what are the most commonly observed values? Why?
 
 To answer this question, we will use `group_by` and `summarize`. 
@@ -180,9 +191,7 @@ snow=ny_noaa %>%
   summarize(n_obs = n())
 ```
 
-There are `r nrow(snow)` observations and `r ncol(snow)` columns in the snow data. The variables included are as following: `r colnames(snow)`.
-
-The most commonly observed values is 0 based on this output which would make sense because there should be more days that it does not snow in NY than days that snows. 
+The most commonly observed values is `r snow %>% count(snow, sort = TRUE) %>% slice(1:3) %>% pull(snow)` . This number would make sense because there should be more days that it does not snow in NY than days that snows. This falls in line with our general expectations of the weather in NY. 
 
 #### Make a two-panel plot showing the average max temperature in January and in July in each station across years. 
 
@@ -196,19 +205,19 @@ avg_jan_july_p<-
   drop_na(mean_tmax)%>%
   ggplot(aes(x = year, y = mean_tmax)) +
   geom_point(aes(color=id, alpha = .1))+
-  theme(legend.position = "none") + 
+  theme(legend.position = "none",
+        legend.text = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
   labs(
     title = "Average max temps in January and July",
     x = "Years",
     y = "Average Max daily temperature (C)",
     caption = "Data from the ny noaa package") +
-  scale_x_discrete(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010),
-      labels = c("1980","1985", "1990", "1995", "2000", "2005", "2010")) +
   facet_grid(~month)
 
 avg_jan_july_p
 
-ggsave("avg_jan_july_p.pdf")
+ggsave("avg_jan_july_p.pdf", width=20, height=15)
 ```
 
 Is there any observable / interpretable structure? Any outliers?
@@ -217,9 +226,7 @@ From the two-panel plot, we can see that January has a lower average max temp co
 
 There seems to be a few outliers, but the ones to note is an outlier around 1982 in January, and around 1988 in July. It is hard to tell which location, however, due to the abundance of locations and the colors used to represent each dot. Further analysis could be done on these years to figure out which location had an abnormal average max temperatures. 
 
-There are `r nrow(avg_jan_july_p)` observations and `r ncol(avg_jan_july_p)` columns in the avg_jan_july_p dataset. The variables included are as following: `r colnames(avg_jan_july_p)`.
-
-### Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option). 
+#### Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option). 
 
 ```{r two-panel tmin and max}
 tmax_tmin_p = ny_noaa %>% 
@@ -246,9 +253,7 @@ ggsave("tmax_tmin_p.pdf")
 
 From this plot, we can see that there are the highest concentrations where there is the lightest color. There seems to be a correlation between minimum and maximum daily temperatures around where there is the most concentrated data. 
 
-There are `r nrow(tmax_tmin_p)` observations and `r ncol(tmax_tmin_p)` columns in the tmax_tmin_p dataset. The variables included are as following: `r colnames(tmax_tmin_p)`.
-
-### Make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+#### Make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
 
 ```{r}
 snow_plot= ny_noaa %>% 
@@ -262,9 +267,9 @@ snow_plot= ny_noaa %>%
     x = "Year",
     y = "Snowfall (mm)",
     caption = "Data from the ny noaa package") +
-  scale_x_discrete(breaks = c(1980, 1985, 1990, 1995, 2000, 2005, 2010)) +
   theme(plot.title = element_text(size = 10, face = "bold"),
-        legend.position = "none")
+        legend.position = "none", 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
 
 snow_plot
 
@@ -274,8 +279,6 @@ ggsave("snow_plot.pdf")
 Note: Legends were omitted to better see plots. 
 
 From this plot, there seems to be the highest concentration of snowfall between approximately 0-25mm. The data is skewed to the right, and there are fewer occasions where it snowed more than 75mm of snow throughout the years. 
-
-There are `r nrow(snow_plot)` observations and `r ncol(snow_plot)` columns in the snow_plot dataset. The variables included are as following: `r colnames(snow_plot)`.
 
 ```{r combine}
 twopanel=tmax_tmin_p+snow_plot
